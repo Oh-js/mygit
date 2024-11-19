@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <title>캠퍼스 케어 - 수강신청</title>
+    <style>
+        /* 기존 CSS 코드 유지 */
+        /* 검색 결과가 없을 때 표시할 스타일 추가 */
+        .no-results {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 사이드바 -->
+        <div class="sidebar">
+            <h2>캠퍼스 케어</h2>
+            <ul>
+                <li>수강관리</li>
+                <li>강의조회</li>
+                <li class="active">수강신청/취소</li>
+                <li>시간표</li>
+                <li>강의평가</li>
+                <li>학점현황</li>
+            </ul>
+        </div>
+
+        <!-- 메인 콘텐츠 -->
+        <div class="main-content">
+            <div class="content-header">
+                <h2>수강신청</h2>
+                <div>
+                    <span>2024학년도 1학기</span>
+                    <span>홍길동(20240001)</span>
+                </div>
+            </div>
+
+            <!-- 검색 영역 -->
+            <div class="search-area">
+                <select id="searchType">
+                    <option value="all">전체</option>
+                    <option value="major">전공필수</option>
+                    <option value="required">교양필수</option>
+                    <option value="optional">교양선택</option>
+                </select>
+                <input type="text" id="searchInput" placeholder="과목명 또는 교수명을 입력하세요">
+                <button class="btn btn-primary" onclick="searchCourses()">검색</button>
+            </div>
+
+            <!-- 수강신청 테이블 -->
+            <table class="course-table" id="courseTable">
+                <thead>
+                    <tr>
+                        <th>과목코드</th>
+                        <th>이수구분</th>
+                        <th>과목명</th>
+                        <th>담당교수</th>
+                        <th>학점</th>
+                        <th>강의시간</th>
+                        <th>강의실</th>
+                        <th>잔여석</th>
+                        <th>신청</th>
+                    </tr>
+                </thead>
+                <tbody id="courseTableBody">
+                    <!-- JavaScript로 동적으로 채워질 영역 -->
+                </tbody>
+            </table>
+
+            <!-- 수강신청 내역 -->
+            <h3 style="margin: 20px 0">수강신청 내역</h3>
+            <table class="course-table">
+                <thead>
+                    <tr>
+                        <th>과목코드</th>
+                        <th>이수구분</th>
+                        <th>과목명</th>
+                        <th>담당교수</th>
+                        <th>학점</th>
+                        <th>강의시간</th>
+                        <th>강의실</th>
+                        <th>취소</th>
+                    </tr>
+                </thead>
+                <tbody id="registeredCourseBody">
+                    <!-- JavaScript로 동적으로 채워질 영역 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 초기 과목 데이터
+        const coursesData = [
+            {
+                courseId: 'CS101',
+                courseType: '전공필수',
+                courseName: '자바프로그래밍',
+                professor: '김교수',
+                credits: 3,
+                classTime: '월,수 9:00-10:30',
+                classroom: '공학관 401',
+                capacity: 40,
+                enrolled: 15
+            },
+            {
+                courseId: 'CS102',
+                courseType: '전공필수',
+                courseName: '알고리즘',
+                professor: '박교수',
+                credits: 3,
+                classTime: '화,목 13:00-14:30',
+                classroom: '공학관 405',
+                capacity: 45,
+                enrolled: 15
+            }
+        ];
+
+        // 수강신청 내역을 저장할 배열
+        let registeredCourses = [];
+
+        // 페이지 로드 시 초기 데이터 표시
+        window.onload = function() {
+            displayCourses(coursesData);
+        };
+
+        // 과목 목록 표시 함수
+        function displayCourses(courses) {
+            const tbody = document.getElementById('courseTableBody');
+            tbody.innerHTML = '';
+
+            courses.forEach(course => {
+                const remaining = course.capacity - course.enrolled;
+                const isRegistered = registeredCourses.some(rc => rc.courseId === course.courseId);
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${course.courseId}</td>
+                        <td>${course.courseType}</td>
+                        <td>${course.courseName}</td>
+                        <td>${course.professor}</td>
+                        <td>${course.credits}</td>
+                        <td>${course.classTime}</td>
+                        <td>${course.classroom}</td>
+                        <td>${remaining}/${course.capacity}</td>
+                        <td>
+                            <button class="btn btn-primary" 
+                                    onclick="registerCourse('${course.courseId}')"
+                                    ${isRegistered ? 'disabled' : ''}>
+                                ${isRegistered ? '신청완료' : '신청'}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // 검색 기능
+        function searchCourses() {
+            const searchType = document.getElementById('searchType').value;
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+
+            const filteredCourses = coursesData.filter(course => {
+                if (searchType !== 'all' && course.courseType !== searchType) {
+                    return false;
+                }
+                return course.courseName.toLowerCase().includes(searchText) ||
+                       course.professor.toLowerCase().includes(searchText);
+            });
+
+            displayCourses(filteredCourses);
+        }
+
+        // 수강신청 처리
+        function registerCourse(courseId) {
+            const course = coursesData.find(c => c.courseId === courseId);
+            if (!course) return;
+
+            if (course.enrolled >= course.capacity) {
+                alert('수강 정원이 초과되었습니다.');
+                return;
+            }
+
+            if (registeredCourses.some(c => c.courseId === courseId)) {
+                alert('이미 신청한 과목입니다.');
+                return;
+            }
+
+            course.enrolled++;
+            registeredCourses.push(course);
+            updateRegisteredCourses();
+            displayCourses(coursesData);
+        }
+
+        // 수강취소 처리
+        function cancelCourse(courseId) {
+            const courseIndex = registeredCourses.findIndex(c => c.courseId === courseId);
+            if (courseIndex === -1) return;
+
+            const course = coursesData.find(c => c.courseId === courseId);
+            if (course) {
+                course.enrolled--;
+            }
+
+            registeredCourses.splice(courseIndex, 1);
+            updateRegisteredCourses();
+            displayCourses(coursesData);
+        }
+
+        // 수강신청 내역 업데이트
+        function updateRegisteredCourses() {
+            const tbody = document.getElementById('registeredCourseBody');
+            tbody.innerHTML = '';
+
+            registeredCourses.forEach(course => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${course.courseId}</td>
+                        <td>${course.courseType}</td>
+                        <td>${course.courseName}</td>
+                        <td>${course.professor}</td>
+                        <td>${course.credits}</td>
+                        <td>${course.classTime}</td>
+                        <td>${course.classroom}</td>
+                        <td>
+                            <button class="btn btn-danger" 
+                                    onclick="cancelCourse('${course.courseId}')">
+                                취소
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // 이벤트 리스너 등록
+        document.getElementById('searchInput').addEventListener('keyup', searchCourses);
+        document.getElementById('searchType').addEventListener('change', searchCourses);
+    </script>
+</body>
+</html>
